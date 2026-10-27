@@ -1,6 +1,6 @@
-studentName,fatherName,motherName,rollNo,admissionNo,class,section,mathMarks,englishMarks,scienceMarks,hindiMarks,sstMarks,computerMarks,remarks
-Aarav Kumar,Rajesh Kumar,Sunita Kumar,1,ADM-2026-0001,10,A,85,78,90,82,76,88,Good performance
-Priya Kumari,Suresh Kumar,Meena Kumari,2,ADM-2026-0002,10,A,93,89,95,91,88,96,Excellent performance
-Rohan Sharma,Anil Sharma,Pooja Sharma,3,ADM-2026-0003,10,A,74,71,68,75,70,72,Very good effort
-Sneha Patel,Mahesh Patel,Rekha Patel,4,ADM-2026-0004,10,A,62,58,65,60,59,64,Fair progress
-Vikram Singh,Dharmendra Singh,Geeta Devi,5,ADM-2026-0005,10,A,52,48,55,50,49,54,Satisfactory result
+studentName,fatherName,motherName,class,section,rollNo,admissionNo,maths_ut1,maths_ut2,maths_theory,maths_practical,science_ut1,science_ut2,science_theory,science_practical,english_ut1,english_ut2,english_theory,english_practical,hindi_ut1,hindi_ut2,hindi_theory,hindi_practical,sst_ut1,sst_ut2,sst_theory,sst_practical,computer_ut1,computer_ut2,computer_theory,computer_practical,remarks
+ABHIJEET PANDEY,ANUJ KUMAR PANDEY,SANGITA DEVI,IX,A,2,ADM-2026-0002,15,15,48,14,13,15,49,14,19,22,73,17,23,20,62,17,20,15,42,15,16,21,41,45,EXCELLENT!
+SEEMA KUMARI,RAMESH KUMAR,GEETA DEVI,IX,A,1,ADM-2026-0001,18,17,55,18,16,18,52,16,21,23,78,18,22,22,68,18,21,18,50,16,19,23,52,46,OUTSTANDING!
+ROHAN SHARMA,ANIL SHARMA,POOJA SHARMA,IX,A,3,ADM-2026-0003,14,16,45,15,12,14,46,14,18,20,70,16,20,19,58,16,19,14,40,14,15,20,40,42,VERY GOOD!
+PRIYA KUMARI,SURESH KUMAR,MEENA KUMARI,IX,B,1,ADM-2026-0004,19,18,60,19,17,19,58,18,22,24,80,19,23,23,72,19,22,19,54,18,20,24,55,48,OUTSTANDING!
+VIKRAM SINGH,DHARMENDRA SINGH,GEETA DEVI,IX,B,2,ADM-2026-0005,12,13,38,12,11,12,39,12,15,17,55,14,17,16,48,14,16,12,35,12,13,17,32,38,FAIR PROGRESS
