@@ -195,6 +195,8 @@
       grid-template-columns: 460px 1fr;
       gap: 20px;
       align-items: flex-start;
+      min-width: 0;
+      width: 100%;
     }
 
     .panel {
@@ -557,14 +559,28 @@
       padding: 24px 16px;
       min-height: 600px;
       overflow: auto;
+      -webkit-overflow-scrolling: touch;
       display: flex;
       justify-content: center;
       align-items: flex-start;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .preview-stage {
+      position: relative;
+      margin: 0 auto;
+      flex-shrink: 0;
+      transition: width 0.15s ease, height 0.15s ease;
+      box-sizing: border-box;
     }
 
     .preview-scaler {
-      transform-origin: top center;
+      transform-origin: top left;
       transition: transform 0.15s ease;
+      width: 297mm;
+      height: 210mm;
     }
 
     .empty {
@@ -753,7 +769,8 @@
       font-weight: 700;
     }
 
-    .left-table th, .left-table td {
+    .left-table th,
+    .left-table td {
       border: 1.2px solid #000000;
       height: 6.9mm;
       padding: 0;
@@ -802,7 +819,8 @@
       font-weight: 700;
     }
 
-    .right-table th, .right-table td {
+    .right-table th,
+    .right-table td {
       border: 1.2px solid #000000;
       height: 6.9mm;
       padding: 0;
@@ -876,7 +894,8 @@
       text-align: center;
     }
 
-    .grade-table th, .grade-table td {
+    .grade-table th,
+    .grade-table td {
       border: 1.2px solid #000000;
       height: 6.6mm;
       padding: 0;
@@ -885,7 +904,8 @@
       color: #000000;
     }
 
-    .grade-table th.scale-first, .grade-table td.scale-first {
+    .grade-table th.scale-first,
+    .grade-table td.scale-first {
       width: 32mm;
     }
 
@@ -931,6 +951,325 @@
       object-fit: contain;
     }
 
+    /* ============================================================== */
+    /* RESPONSIVE SCREEN STYLES & MOBILE OPTIMIZATIONS                */
+    /* ============================================================== */
+
+    @media screen {
+      html, body {
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+    }
+
+    .mobile-view-tabs {
+      display: none;
+      background: #e2e8f0;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 14px;
+      gap: 4px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .view-tab-btn {
+      flex: 1;
+      background: transparent;
+      color: #334155;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 40px;
+      touch-action: manipulation;
+    }
+
+    .view-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.6);
+      color: #0f2c42;
+    }
+
+    .view-tab-btn.active {
+      background: #ffffff;
+      color: #0f2c42;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Tablet & Medium Screens (<= 1024px) */
+    @media screen and (max-width: 1024px) {
+      .wrap {
+        max-width: 100%;
+        margin: 12px auto;
+        padding: 0 12px;
+      }
+
+      .layout {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .mobile-view-tabs {
+        display: flex;
+      }
+
+      .layout[data-view="editor"] .preview-panel {
+        display: none !important;
+      }
+      .layout[data-view="editor"] .editor-panel {
+        display: block !important;
+      }
+
+      .layout[data-view="preview"] .editor-panel {
+        display: none !important;
+      }
+      .layout[data-view="preview"] .preview-panel {
+        display: block !important;
+      }
+
+      .layout[data-view="both"] .editor-panel,
+      .layout[data-view="both"] .preview-panel {
+        display: block !important;
+      }
+
+      .editor-panel,
+      .preview-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+      }
+
+      .cards {
+        min-height: 380px;
+        padding: 16px 10px;
+      }
+    }
+
+    /* Mobile Screens (<= 600px) */
+    @media screen and (max-width: 600px) {
+      .app-header {
+        padding: 10px 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .app-header h1 {
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .app-header p {
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .header-badge {
+        align-self: flex-start;
+        font-size: 11px;
+        padding: 3px 8px;
+      }
+
+      .wrap {
+        padding: 0 8px;
+        margin: 8px auto;
+      }
+
+      .panel {
+        padding: 14px 10px;
+        border-radius: 8px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 8px 6px;
+        gap: 6px;
+      }
+
+      .toolbar button,
+      .toolbar .file-label {
+        flex: 1 1 calc(50% - 6px);
+        font-size: 11.5px;
+        padding: 8px 6px;
+        min-height: 40px;
+        text-align: center;
+        box-sizing: border-box;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .field.full {
+        grid-column: span 1;
+      }
+
+      .field input,
+      .field select,
+      .field textarea {
+        font-size: 16px; /* Prevents auto-zoom in mobile Safari */
+        padding: 8px 10px;
+        min-height: 40px;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .field label {
+        font-size: 11px;
+      }
+
+      .actions {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .actions button {
+        min-height: 40px;
+        font-size: 13px;
+      }
+
+      .live-marks-summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 10px;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .students-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .group-filter-wrap {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .group-filter-wrap select {
+        flex: 1;
+        font-size: 13px;
+        min-height: 34px;
+      }
+
+      .preview-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .preview-title-block h2 {
+        font-size: 15px;
+      }
+
+      .preview-actions {
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .zoom-controls {
+        flex: 1 1 100%;
+        justify-content: space-between;
+      }
+
+      .zoom-controls select {
+        font-size: 13px;
+        padding: 5px 8px;
+        min-height: 36px;
+      }
+
+      .preview-actions button {
+        flex: 1 1 calc(50% - 4px);
+        font-size: 12px;
+        min-height: 38px;
+      }
+
+      .cards {
+        padding: 12px 6px;
+        min-height: 280px;
+      }
+
+      /* Modal Responsiveness */
+      .modal-backdrop {
+        padding: 8px;
+      }
+
+      .modal-card {
+        max-height: 94vh;
+      }
+
+      .import-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .stat-pill {
+        padding: 8px 10px;
+      }
+
+      .stat-pill .s-num {
+        font-size: 17px;
+      }
+
+      .stat-pill .s-lbl {
+        font-size: 10px;
+      }
+
+      .conflict-options {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .modal-filter-tabs {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .modal-tab-btn {
+        flex: 1 1 calc(50% - 4px);
+        padding: 6px 8px;
+        font-size: 11px;
+        text-align: center;
+      }
+    }
+
+    /* Small Mobile (<= 380px e.g. 320x568) */
+    @media screen and (max-width: 380px) {
+      .wrap {
+        padding: 0 4px;
+      }
+
+      .panel {
+        padding: 10px 6px;
+      }
+
+      .toolbar button,
+      .toolbar .file-label {
+        flex: 1 1 100%;
+      }
+
+      .import-stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-actions button {
+        flex: 1 1 100%;
+      }
+    }
+
     /* Print Styles */
     @page {
       size: 297mm 210mm;
@@ -943,7 +1282,8 @@
         margin: 0;
       }
 
-      html, body {
+      html,
+      body {
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
@@ -968,7 +1308,8 @@
       .wrap,
       .layout,
       .preview-panel,
-      .cards {
+      .cards,
+      .preview-stage {
         margin: 0 !important;
         padding: 0 !important;
         border: none !important;
@@ -977,14 +1318,18 @@
         width: 297mm !important;
         max-width: 297mm !important;
         display: block !important;
+        position: static !important;
+        height: auto !important;
       }
 
       .preview-scaler {
         transform: none !important;
         width: 297mm !important;
+        height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
         display: block !important;
+        position: static !important;
       }
 
       .report-card {
@@ -1252,20 +1597,42 @@
       <label class="file-label" title="Upload Excel (.xlsx, .xls) or CSV file">
         Upload Excel / CSV <input id="fileInput" type="file" accept=".csv,.xlsx,.xls">
       </label>
-      <button class="secondary" id="downloadExcelTemplate" title="Download Excel template containing all student and subject marks columns">Download Excel Template (.xlsx)</button>
+      <button class="secondary" id="downloadExcelTemplate"
+        title="Download Excel template containing all student and subject marks columns">Download Excel Template
+        (.xlsx)</button>
       <button class="secondary" id="downloadCsvTemplate" title="Download CSV template">Download CSV Template</button>
-      <button class="secondary" id="exportExcel" title="Export all students as Excel spreadsheet">Export Student Data (Excel)</button>
-      <button class="secondary" id="exportBackup" title="Download complete backup of all students and settings as JSON">Export Backup (JSON)</button>
+      <button class="secondary" id="exportExcel" title="Export all students as Excel spreadsheet">Export Student Data
+        (Excel)</button>
+      <button class="secondary" id="exportBackup"
+        title="Download complete backup of all students and settings as JSON">Export Backup (JSON)</button>
       <label class="file-label secondary-file-label" title="Restore complete backup from JSON file">
         Import Backup <input id="backupFileInput" type="file" accept=".json,application/json">
       </label>
-      <button class="secondary" id="downloadSinglePdf" title="Directly download PDF for currently selected student">Download PDF (Selected)</button>
+      <button class="secondary" id="downloadSinglePdf"
+        title="Directly download PDF for currently selected student">Download PDF (Selected)</button>
       <button class="green" id="printAll" title="Print all students or save as PDF">Print All / Save PDF</button>
-      <button class="secondary" id="downloadBulkPdf" title="Directly download multi-page PDF for entire class">Download Bulk PDF</button>
+      <button class="secondary" id="downloadBulkPdf" title="Directly download multi-page PDF for entire class">Download
+        Bulk PDF</button>
       <button class="danger" id="clearAll" title="Clear all students from memory">Clear All Students</button>
     </div>
 
-    <div class="layout">
+    <!-- Mobile / Tablet View Switcher -->
+    <nav class="mobile-view-tabs no-print" id="mobileViewTabs" aria-label="View Switcher">
+      <button type="button" class="view-tab-btn active" id="tabViewBoth" data-view="both">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+        Both (Stacked)
+      </button>
+      <button type="button" class="view-tab-btn" id="tabViewEditor" data-view="editor">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editor
+      </button>
+      <button type="button" class="view-tab-btn" id="tabViewPreview" data-view="preview">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview
+      </button>
+    </nav>
+
+    <div class="layout" data-view="both">
       <!-- Editor Panel -->
       <section class="panel editor-panel no-print">
         <h2>School &amp; Examination Settings</h2>
@@ -1317,7 +1684,8 @@
               <div class="sig-preview-thumb">
                 <img id="teacherSigPreviewImg" src="" alt="Class Teacher Signature Preview">
               </div>
-              <button class="secondary sig-remove-btn" id="removeTeacherSigBtn" type="button" title="Remove signature">Remove</button>
+              <button class="secondary sig-remove-btn" id="removeTeacherSigBtn" type="button"
+                title="Remove signature">Remove</button>
             </div>
             <small class="field-hint">PNG or JPG. Background auto-removed.</small>
           </div>
@@ -1328,7 +1696,8 @@
               <div class="sig-preview-thumb">
                 <img id="principalSigPreviewImg" src="" alt="Principal Signature Preview">
               </div>
-              <button class="secondary sig-remove-btn" id="removePrincipalSigBtn" type="button" title="Remove signature">Remove</button>
+              <button class="secondary sig-remove-btn" id="removePrincipalSigBtn" type="button"
+                title="Remove signature">Remove</button>
             </div>
             <small class="field-hint">PNG or JPG. Background auto-removed.</small>
           </div>
@@ -1435,6 +1804,8 @@
                 <option value="85">85%</option>
                 <option value="70">70%</option>
                 <option value="55">55%</option>
+                <option value="40">40%</option>
+                <option value="25">25%</option>
               </select>
             </div>
             <button class="secondary" id="printPreview">Print Selected</button>
@@ -1442,8 +1813,10 @@
           </div>
         </div>
         <div id="preview" class="cards">
-          <div class="preview-scaler" id="previewScaler">
-            <div class="empty">Add a student or upload an Excel file to preview the report card.</div>
+          <div class="preview-stage" id="previewStage">
+            <div class="preview-scaler" id="previewScaler">
+              <div class="empty">Add a student or upload an Excel file to preview the report card.</div>
+            </div>
           </div>
         </div>
       </section>
@@ -1455,7 +1828,13 @@
     <div class="modal-card">
       <div class="modal-head">
         <h3>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
           Excel / CSV Student Import Preview &amp; Validation
         </h3>
         <button class="modal-close-btn" id="modalCloseBtn" type="button" aria-label="Close modal">&times;</button>
@@ -1499,10 +1878,14 @@
         </div>
 
         <div class="modal-filter-tabs">
-          <button class="modal-tab-btn active" data-tab="all" id="tabAll">All Rows (<span id="countTabAll">0</span>)</button>
-          <button class="modal-tab-btn" data-tab="valid" id="tabValid">Valid Rows (<span id="countTabValid">0</span>)</button>
-          <button class="modal-tab-btn" data-tab="duplicates" id="tabDuplicates">Duplicates (<span id="countTabDuplicates">0</span>)</button>
-          <button class="modal-tab-btn" data-tab="errors" id="tabErrors">Errors (<span id="countTabErrors">0</span>)</button>
+          <button class="modal-tab-btn active" data-tab="all" id="tabAll">All Rows (<span
+              id="countTabAll">0</span>)</button>
+          <button class="modal-tab-btn" data-tab="valid" id="tabValid">Valid Rows (<span
+              id="countTabValid">0</span>)</button>
+          <button class="modal-tab-btn" data-tab="duplicates" id="tabDuplicates">Duplicates (<span
+              id="countTabDuplicates">0</span>)</button>
+          <button class="modal-tab-btn" data-tab="errors" id="tabErrors">Errors (<span
+              id="countTabErrors">0</span>)</button>
         </div>
 
         <div style="max-height: 320px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
@@ -1727,7 +2110,7 @@
               students = parsed.map((s, idx) => {
                 let details = s.subjectDetails;
                 if (!Array.isArray(details) || details.length !== 6) {
-                  const legacyMarks = Array.isArray(s.marks) ? s.marks : [0,0,0,0,0,0];
+                  const legacyMarks = Array.isArray(s.marks) ? s.marks : [0, 0, 0, 0, 0, 0];
                   details = SUBJECTS.map((sub, i) => {
                     const m = Number(legacyMarks[i] || 0);
                     return {
@@ -1885,8 +2268,8 @@
         return students.find(s => {
           if (excludeId && s.id === excludeId) return false;
           return getEffectiveClass(s.className) === candClass &&
-                 getEffectiveSection(s.section) === candSec &&
-                 normalizeRoll(s.roll) === candRoll;
+            getEffectiveSection(s.section) === candSec &&
+            normalizeRoll(s.roll) === candRoll;
         }) || null;
       }
 
@@ -1939,7 +2322,7 @@
         groups.forEach(g => {
           const p = parseGroupKey(g);
           const count = students.filter(s => getEffectiveClass(s.className) === p.className.toLowerCase() &&
-                                             getEffectiveSection(s.section) === p.section.toLowerCase()).length;
+            getEffectiveSection(s.section) === p.section.toLowerCase()).length;
           const label = `Class ${p.className || '—'} - Section ${p.section || '—'} (${count})`;
           html += `<option value="${g}" ${g === selectedGroupKey ? 'selected' : ''}>${escapeHtml(label)}</option>`;
         });
@@ -1950,7 +2333,7 @@
         if (!selectedGroupKey) return students;
         const p = parseGroupKey(selectedGroupKey);
         return students.filter(s => getEffectiveClass(s.className) === p.className.toLowerCase() &&
-                                   getEffectiveSection(s.section) === p.section.toLowerCase());
+          getEffectiveSection(s.section) === p.section.toLowerCase());
       }
 
       // Render Subject Editor Table Inputs
@@ -1975,9 +2358,9 @@
           // Add live input listeners
           ['ut1', 'ut2', 'theory', 'practical'].forEach(field => {
             const inp = tr.querySelector(`#sub_${field}_${i}`);
-            inp.addEventListener('focus', function() { if (this.value === '0') this.select(); });
+            inp.addEventListener('focus', function () { if (this.value === '0') this.select(); });
             inp.addEventListener('input', () => updateSubjectRowCalculations(i));
-            inp.addEventListener('blur', function() { if (this.value.trim() === '') this.value = '0'; updateSubjectRowCalculations(i); });
+            inp.addEventListener('blur', function () { if (this.value.trim() === '') this.value = '0'; updateSubjectRowCalculations(i); });
           });
         });
       }
@@ -2042,7 +2425,7 @@
         // Normalize subject details
         let details = s.subjectDetails;
         if (!Array.isArray(details) || details.length !== 6) {
-          const mList = Array.isArray(s.marks) ? s.marks : [0,0,0,0,0,0];
+          const mList = Array.isArray(s.marks) ? s.marks : [0, 0, 0, 0, 0, 0];
           details = SUBJECTS.map((sub, i) => {
             const total = Number(mList[i] || 0);
             return {
@@ -2205,23 +2588,52 @@
       function updatePreviewScale() {
         const scaler = $('previewScaler');
         const preview = $('preview');
+        const stage = $('previewStage');
         if (!scaler || !preview) return;
 
-        const zoomVal = $('zoomSelect')?.value || 'fit';
-        let scale = 1;
+        const card = scaler.querySelector('.report-card');
+        if (!card) {
+          scaler.style.transform = 'none';
+          scaler.style.width = 'auto';
+          scaler.style.height = 'auto';
+          if (stage) {
+            stage.style.width = '100%';
+            stage.style.height = 'auto';
+          }
+          return;
+        }
 
+        const zoomVal = $('zoomSelect')?.value || 'fit';
+        let containerWidth = preview.clientWidth;
+        if (!containerWidth || containerWidth <= 0) {
+          containerWidth = Math.max(280, window.innerWidth - 32);
+        }
+
+        const padding = window.innerWidth <= 600 ? 16 : 32;
+        const availWidth = Math.max(80, containerWidth - padding);
+        const cardWidthMm = 297;
+        const cardWidthPx = cardWidthMm * 3.7795275591; // ~1122.52px
+        const cardHeightPx = 210 * 3.7795275591; // ~793.70px
+
+        let scale = 1;
         if (zoomVal === 'fit') {
-          const containerWidth = preview.clientWidth - 48; // padding
-          const cardWidthMm = 297;
-          const cardWidthPx = cardWidthMm * 3.7795275591; // ~1122.5px
-          scale = Math.min(1, Math.max(0.35, containerWidth / cardWidthPx));
+          scale = Math.min(1.2, Math.max(0.1, availWidth / cardWidthPx));
         } else {
           scale = parseInt(zoomVal, 10) / 100;
         }
 
+        const scaledWidth = Math.round(cardWidthPx * scale);
+        const scaledHeight = Math.round(cardHeightPx * scale);
+
+        if (stage) {
+          stage.style.width = `${scaledWidth}px`;
+          stage.style.height = `${scaledHeight}px`;
+        }
+
+        scaler.style.width = `${cardWidthPx}px`;
+        scaler.style.height = `${cardHeightPx}px`;
+        scaler.style.transformOrigin = 'top left';
         scaler.style.transform = `scale(${scale})`;
-        const cardHeightPx = 210 * 3.7795275591;
-        scaler.style.marginBottom = `${-(cardHeightPx * (1 - scale))}px`;
       }
 
       function render() {
@@ -3123,9 +3535,16 @@
         }
         isPrintingAll = true;
         calculateRanks();
+        const stage = $('previewStage');
+        if (stage) {
+          stage.style.width = 'auto';
+          stage.style.height = 'auto';
+        }
         const scaler = $('previewScaler');
         if (scaler) {
           scaler.style.transform = 'none';
+          scaler.style.width = '297mm';
+          scaler.style.height = 'auto';
           scaler.style.margin = '0';
           scaler.style.marginBottom = '0';
           scaler.innerHTML = toPrint.map(s => reportHtml(s)).join('');
@@ -3146,9 +3565,16 @@
           return;
         }
         calculateRanks();
+        const stage = $('previewStage');
+        if (stage) {
+          stage.style.width = 'auto';
+          stage.style.height = 'auto';
+        }
         const scaler = $('previewScaler');
         if (scaler) {
           scaler.style.transform = 'none';
+          scaler.style.width = '297mm';
+          scaler.style.height = 'auto';
           scaler.style.margin = '0';
           scaler.style.marginBottom = '0';
           scaler.innerHTML = reportHtml(chosen);
@@ -3294,12 +3720,49 @@
         }
       });
 
+      function initMobileViewTabs() {
+        const layout = document.querySelector('.layout');
+        const tabButtons = document.querySelectorAll('.view-tab-btn');
+        if (!layout || !tabButtons.length) return;
+
+        tabButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const view = btn.getAttribute('data-view');
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            layout.setAttribute('data-view', view);
+
+            // Re-calculate preview scale after view switch
+            setTimeout(updatePreviewScale, 60);
+
+            // Smooth scroll into focus on mobile
+            if (view === 'preview') {
+              const preview = document.querySelector('.preview-panel');
+              if (preview) {
+                preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            } else if (view === 'editor') {
+              const editor = document.querySelector('.editor-panel');
+              if (editor) {
+                editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          });
+        });
+      }
+
+      window.addEventListener('orientationchange', () => {
+        setTimeout(updatePreviewScale, 150);
+      });
+
       // Initial Setup
       buildSubjectEditorFields();
       loadFromStorage();
       render();
       resetForm();
+      initMobileViewTabs();
     })();
   </script>
 </body>
+
 </html>
