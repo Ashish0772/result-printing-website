@@ -735,7 +735,7 @@
     .udise-box {
       position: absolute;
       top: 46.3mm;
-      right: 50.8mm;
+      right: 26.9mm;
       font-family: Calibri, 'Segoe UI', Arial, sans-serif;
       font-size: 9.6pt;
       font-weight: 700;
@@ -759,20 +759,20 @@
     /* Student Information Section */
     .student-info {
       position: absolute;
-      top: 72.3mm;
-      left: 12.7mm;
-      right: 12.7mm;
+      top: 71.5mm;
+      left: 26.9mm;
+      width: 243.2mm;
       font-family: 'Bahnschrift', 'Segoe UI', Arial, sans-serif;
       font-size: 11pt;
       font-weight: 700;
       color: #000000;
-      line-height: 1.68;
+      line-height: 1.62;
     }
 
     .info-row {
       display: flex;
       align-items: baseline;
-      min-height: 6.8mm;
+      min-height: 6.6mm;
     }
 
     .info-label {
@@ -798,37 +798,39 @@
       align-items: baseline;
     }
 
+    .roll-part {
+      width: 90mm;
+      display: flex;
+      align-items: baseline;
+      flex-shrink: 0;
+    }
+
     .class-part {
       display: flex;
       align-items: baseline;
-      width: 144.5mm;
-    }
-
-    .roll-part {
-      width: 79.5mm;
-      display: flex;
-      align-items: baseline;
+      margin-left: 6mm;
     }
 
     .sec-part {
       display: flex;
       align-items: baseline;
+      margin-left: auto;
     }
 
     /* Tables Area */
     .tables-container {
       position: absolute;
-      top: 98.2mm;
-      left: 11.6mm;
-      right: 11.6mm;
+      top: 98mm;
+      left: 26.9mm;
+      width: 243.2mm;
       display: flex;
-      align-items: flex-end;
-      gap: 11.5mm;
+      align-items: stretch;
+      gap: 0;
     }
 
-    /* Left Table: SUBJECT, UT-1, UT-2 */
+    /* Left Table: UNIT TEST (SUBJECT, UT-1, UT-2) */
     .left-table {
-      width: 121.2mm;
+      width: 90mm;
       border-collapse: collapse;
       table-layout: fixed;
       font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -844,27 +846,34 @@
       vertical-align: middle;
     }
 
-    .left-table th {
+    .left-table th.head-category {
+      background: #ffffff;
+      color: #000000;
+      height: 7.6mm;
+      text-align: center;
+      font-size: 11.5pt;
+      letter-spacing: 0.5px;
+    }
+
+    .left-table th.head-sub {
       background: #17375d;
       color: #ffffff;
       height: 7.8mm;
       text-align: center;
-      font-size: 11.5pt;
+      font-size: 11pt;
       letter-spacing: 0.3px;
     }
 
-    .left-table th.col-sub {
-      width: 74.8mm;
-      font-size: 14.5pt;
-      letter-spacing: 0.5px;
+    .left-table .col-sub {
+      width: 48mm;
     }
 
-    .left-table th.col-ut1 {
-      width: 23.2mm;
+    .left-table .col-ut1 {
+      width: 21mm;
     }
 
-    .left-table th.col-ut2 {
-      width: 23.2mm;
+    .left-table .col-ut2 {
+      width: 21mm;
     }
 
     .left-table td.cell-sub {
@@ -876,9 +885,10 @@
       text-align: center;
     }
 
-    /* Right Table: FIRST TERM, THEORY, PRACTICAL, TOTAL(100), GRADE */
+    /* Right Table: FIRST TERM (SUBJECT, THEORY, PRACTICAL, TOTAL(100), GRADE) */
     .right-table {
-      width: 125mm;
+      width: 153.2mm;
+      margin-left: -1.2px;
       border-collapse: collapse;
       table-layout: fixed;
       font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -895,10 +905,11 @@
       text-align: center;
     }
 
-    .right-table th.head-term {
+    .right-table th.head-category {
       background: #ffffff;
       color: #000000;
       height: 7.6mm;
+      text-align: center;
       font-size: 11.5pt;
       letter-spacing: 0.5px;
     }
@@ -911,34 +922,44 @@
       letter-spacing: 0.3px;
     }
 
+    .right-table .col-right-sub {
+      width: 48mm;
+    }
+
+    .right-table td.cell-sub {
+      text-align: left;
+      padding-left: 2.5mm;
+    }
+
     .right-table .col-theory {
-      width: 28.9mm;
+      width: 26mm;
     }
 
     .right-table .col-practical {
-      width: 30mm;
+      width: 26mm;
     }
 
     .right-table .col-total {
-      width: 31.7mm;
+      width: 29mm;
     }
 
     .right-table .col-grade {
-      width: 34.4mm;
+      width: 24.2mm;
     }
 
     /* Remarks Box */
     .remarks-box {
       position: absolute;
       top: 159.2mm;
-      left: 11.6mm;
-      width: 121.2mm;
+      left: 26.9mm;
+      width: 243.2mm;
       height: 7.2mm;
       border: 1.2px solid #000000;
       box-sizing: border-box;
       padding: 1.2mm 2.5mm;
-      font-family: 'Arial Black', Impact, sans-serif;
-      font-size: 8.5pt;
+      font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+      font-size: 10pt;
+      font-weight: 700;
       display: flex;
       align-items: center;
       color: #000000;
@@ -951,12 +972,13 @@
     .grade-table {
       position: absolute;
       top: 167.8mm;
-      left: 11.6mm;
-      width: 174.3mm;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 175mm;
       border-collapse: collapse;
       table-layout: fixed;
       font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-      font-size: 7pt;
+      font-size: 7.5pt;
       font-weight: 700;
       text-align: center;
     }
@@ -980,8 +1002,8 @@
     .report-footer {
       position: absolute;
       bottom: 7mm;
-      left: 18.1mm;
-      right: 18.1mm;
+      left: 26.9mm;
+      width: 243.2mm;
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
@@ -2582,13 +2604,13 @@
           <span class="info-val">${escapeHtml(String(s.mother || '').toUpperCase())}</span>
         </div>
         <div class="info-row class-row-split">
-          <div class="class-part">
-            <span class="info-label">CLASS</span>
-            <span class="info-colon">:</span>
-            <span class="info-val">${escapeHtml(String(studentClass).toUpperCase())}</span>
-          </div>
           <div class="roll-part">
-            <span>ROLL : &nbsp;${escapeHtml(s.roll || '')}</span>
+            <span class="info-label">ROLL NO.</span>
+            <span class="info-colon">:</span>
+            <span class="info-val">${escapeHtml(String(s.roll || ''))}</span>
+          </div>
+          <div class="class-part">
+            <span>CLASS : &nbsp;${escapeHtml(String(studentClass).toUpperCase())}</span>
           </div>
           <div class="sec-part">
             <span>SECTION : &nbsp;${escapeHtml(String(studentSection).toUpperCase())}</span>
@@ -2597,13 +2619,16 @@
       </div>
 
       <div class="tables-container">
-        <!-- Left Table: SUBJECT, UT-1, UT-2 -->
+        <!-- Left Table: UNIT TEST (SUBJECT, UT-1, UT-2) -->
         <table class="left-table">
           <thead>
             <tr>
-              <th class="col-sub">SUBJECT</th>
-              <th class="col-ut1">UT-1</th>
-              <th class="col-ut2">UT-2</th>
+              <th colspan="3" class="head-category">UNIT TEST</th>
+            </tr>
+            <tr>
+              <th class="col-sub head-sub">SUBJECT</th>
+              <th class="col-ut1 head-sub">UT-1</th>
+              <th class="col-ut2 head-sub">UT-2</th>
             </tr>
           </thead>
           <tbody>
@@ -2617,22 +2642,24 @@
           </tbody>
         </table>
 
-        <!-- Right Table: FIRST TERM, THEORY, PRACTICAL, TOTAL(100), GRADE -->
+        <!-- Right Table: FIRST TERM (SUBJECT, THEORY, PRACTICAL, TOTAL(100), GRADE) -->
         <table class="right-table">
           <thead>
             <tr>
-              <th colspan="4" class="head-term">FIRST TERM</th>
+              <th colspan="5" class="head-category">FIRST TERM</th>
             </tr>
             <tr>
-              <th class="head-sub col-theory">THEORY</th>
-              <th class="head-sub col-practical">PRACTICAL</th>
-              <th class="head-sub col-total">TOTAL(100)</th>
-              <th class="head-sub col-grade">GRADE</th>
+              <th class="col-right-sub head-sub">SUBJECT</th>
+              <th class="col-theory head-sub">THEORY</th>
+              <th class="col-practical head-sub">PRACTICAL</th>
+              <th class="col-total head-sub">TOTAL(100)</th>
+              <th class="col-grade head-sub">GRADE</th>
             </tr>
           </thead>
           <tbody>
             ${details.map(d => `
               <tr>
+                <td class="cell-sub">${escapeHtml(d.name)}</td>
                 <td>${d.theory ?? 0}</td>
                 <td>${d.practical ?? 0}</td>
                 <td>${d.total ?? 0}</td>
@@ -2644,7 +2671,7 @@
       </div>
 
       <div class="remarks-box">
-        <span>REMARKS:- &nbsp;${escapeHtml(String(s.remarks || 'EXCELLENT!').toUpperCase())}</span>
+        <span>REMARKS: &nbsp;${escapeHtml(String(s.remarks || 'EXCELLENT').toUpperCase())}</span>
       </div>
 
       <table class="grade-table">
@@ -2677,7 +2704,7 @@
       </table>
 
       <footer class="report-footer">
-        <div class="footer-issued">ISSUED DATE:- &nbsp;${escapeHtml(school.issueDate || '')}</div>
+        <div class="footer-issued">ISSUE DATE: &nbsp;${escapeHtml(school.issueDate || '')}</div>
         <div class="sig-col">
           <div class="sig-slot">
             ${teacherSigData ? `<img src="${teacherSigData}" alt="Class Teacher Sign">` : ''}

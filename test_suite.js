@@ -213,29 +213,32 @@ function generateTestReport(s) {
         <div class="info-row"><span class="info-label">FATHER'S NAME</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.father)}</span></div>
         <div class="info-row"><span class="info-label">MOTHER'S NAME</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.mother)}</span></div>
         <div class="info-row class-row-split">
-          <div class="class-part"><span class="info-label">CLASS</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.className)}</span></div>
-          <div class="roll-part"><span>ROLL : &nbsp;${escapeHtml(s.roll)}</span></div>
+          <div class="roll-part"><span class="info-label">ROLL NO.</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.roll)}</span></div>
+          <div class="class-part"><span>CLASS : &nbsp;${escapeHtml(s.className)}</span></div>
           <div class="sec-part"><span>SECTION : &nbsp;${escapeHtml(s.section)}</span></div>
         </div>
       </div>
       <div class="tables-container">
         <table class="left-table">
-          <thead><tr><th class="col-sub">SUBJECT</th><th class="col-ut1">UT-1</th><th class="col-ut2">UT-2</th></tr></thead>
+          <thead>
+            <tr><th colspan="3" class="head-category">UNIT TEST</th></tr>
+            <tr><th class="col-sub head-sub">SUBJECT</th><th class="col-ut1 head-sub">UT-1</th><th class="col-ut2 head-sub">UT-2</th></tr>
+          </thead>
           <tbody>
             ${details.map(d => `<tr><td class="cell-sub">${d.name}</td><td>${d.ut1}</td><td>${d.ut2}</td></tr>`).join('')}
           </tbody>
         </table>
         <table class="right-table">
           <thead>
-            <tr><th colspan="4" class="head-term">FIRST TERM</th></tr>
-            <tr><th class="head-sub">THEORY</th><th class="head-sub">PRACTICAL</th><th class="head-sub">TOTAL(100)</th><th class="head-sub">GRADE</th></tr>
+            <tr><th colspan="5" class="head-category">FIRST TERM</th></tr>
+            <tr><th class="col-right-sub head-sub">SUBJECT</th><th class="head-sub">THEORY</th><th class="head-sub">PRACTICAL</th><th class="head-sub">TOTAL(100)</th><th class="head-sub">GRADE</th></tr>
           </thead>
           <tbody>
-            ${details.map(d => `<tr><td>${d.theory}</td><td>${d.practical}</td><td>${d.total}</td><td>${d.grade}</td></tr>`).join('')}
+            ${details.map(d => `<tr><td class="cell-sub">${d.name}</td><td>${d.theory}</td><td>${d.practical}</td><td>${d.total}</td><td>${d.grade}</td></tr>`).join('')}
           </tbody>
         </table>
       </div>
-      <div class="remarks-box"><span>REMARKS:- &nbsp;${escapeHtml(s.remarks)}</span></div>
+      <div class="remarks-box"><span>REMARKS: &nbsp;${escapeHtml(s.remarks)}</span></div>
       <table class="grade-table">
         <thead>
           <tr><th class="scale-first">MARKS RANGE</th><th>91-100</th><th>81-90</th><th>71-80</th><th>61-70</th><th>51-60</th><th>41-50</th><th>33-40</th><th>BELOW 33</th></tr>
@@ -245,7 +248,7 @@ function generateTestReport(s) {
         </tbody>
       </table>
       <footer class="report-footer">
-        <div class="footer-issued">ISSUED DATE:- &nbsp;${escapeHtml(school.issueDate)}</div>
+        <div class="footer-issued">ISSUE DATE: &nbsp;${escapeHtml(school.issueDate)}</div>
         <div class="sig-col"><span>CLASS TEACHER'S SIGN</span></div>
         <div class="sig-col"><span>PRINCIPAL'S SIGN</span></div>
       </footer>
@@ -264,9 +267,10 @@ const criticalTerms = [
   "STUDENT 'S NAME",
   "FATHER'S NAME",
   "MOTHER'S NAME",
-  'CLASS',
-  'ROLL : &nbsp;2',
+  'ROLL NO.',
+  'CLASS : &nbsp;IX',
   'SECTION : &nbsp;A',
+  'UNIT TEST',
   'SUBJECT',
   'UT-1',
   'UT-2',
@@ -275,10 +279,10 @@ const criticalTerms = [
   'PRACTICAL',
   'TOTAL(100)',
   'GRADE',
-  'REMARKS:- &nbsp;EXCELLENT!',
+  'REMARKS: &nbsp;EXCELLENT!',
   'MARKS RANGE',
   'BELOW 33',
-  'ISSUED DATE:- &nbsp;04/11/26',
+  'ISSUE DATE: &nbsp;04/11/26',
   "CLASS TEACHER'S SIGN",
   "PRINCIPAL'S SIGN"
 ];
