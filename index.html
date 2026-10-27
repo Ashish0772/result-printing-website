@@ -311,12 +311,49 @@
       font-size: 11px;
     }
 
-    /* Subject Marks Editor Table */
+    /* Subject Marks Editor Table & Wrapper */
+    .subject-editor-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      box-sizing: border-box;
+      scrollbar-width: thin;
+    }
+
+    .subject-editor-wrap::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .subject-editor-wrap::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+
+    .subject-editor-wrap::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 4px;
+    }
+
+    .table-scroll-hint {
+      display: none;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      text-align: right;
+    }
+
     .subject-editor-table {
       width: 100%;
+      min-width: 440px;
       border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 12px;
+      table-layout: auto;
+      font-size: 13px;
+      box-sizing: border-box;
     }
 
     .subject-editor-table th {
@@ -324,52 +361,82 @@
       color: #334155;
       font-weight: 700;
       text-align: center;
-      padding: 6px 4px;
+      padding: 8px 6px;
       border: 1px solid #cbd5e1;
-      font-size: 11px;
+      font-size: 11.5px;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
     }
 
     .subject-editor-table td {
-      padding: 4px 4px;
+      padding: 6px 4px;
       border: 1px solid #e2e8f0;
       vertical-align: middle;
       text-align: center;
+      box-sizing: border-box;
     }
 
     .subject-editor-table td.sub-name-cell {
       text-align: left;
       font-weight: 700;
       color: #0f2c42;
-      padding-left: 6px;
-      font-size: 11.5px;
+      padding: 6px 10px;
+      font-size: 12.5px;
       white-space: nowrap;
+      min-width: 110px;
     }
 
+    /* Input styling - large, readable, centered digits */
     .subject-editor-table input {
       width: 100%;
-      max-width: 52px;
-      padding: 4px 3px;
+      min-width: 48px;
+      max-width: 60px;
+      height: 38px;
+      min-height: 38px;
+      padding: 4px 4px;
       text-align: center;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      box-sizing: border-box;
+      margin: 0 auto;
+      display: block;
+      line-height: normal;
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+
+    .subject-editor-table input::-webkit-outer-spin-button,
+    .subject-editor-table input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     .subject-editor-table input:focus {
       border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
       outline: none;
+      background: #eff6ff;
     }
 
     .subject-editor-table .cell-total {
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 14px;
       color: #0f172a;
+      min-width: 46px;
     }
 
     .subject-editor-table .cell-grade {
       font-weight: 800;
+      font-size: 13.5px;
       color: #0f766e;
+      min-width: 42px;
     }
 
     .live-marks-summary {
@@ -1105,6 +1172,48 @@
         box-sizing: border-box;
       }
 
+      .table-scroll-hint {
+        display: block;
+      }
+
+      .subject-editor-table {
+        min-width: 490px;
+      }
+
+      .subject-editor-table th:first-child {
+        position: sticky;
+        left: 0;
+        background: #f1f5f9;
+        z-index: 3;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .subject-editor-table td.sub-name-cell {
+        position: sticky;
+        left: 0;
+        background: #ffffff;
+        z-index: 2;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .subject-editor-table input {
+        font-size: 16px; /* Prevents auto-zoom in mobile Safari and guarantees legible numbers */
+        min-height: 40px;
+        height: 40px;
+        min-width: 50px;
+        max-width: 58px;
+        padding: 4px 2px;
+        font-weight: 700;
+      }
+
+      .subject-editor-table .cell-total {
+        font-size: 15px;
+      }
+
+      .subject-editor-table .cell-grade {
+        font-size: 14px;
+      }
+
       .form-grid {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -1737,7 +1846,7 @@
         </div>
 
         <h3>Subject Marks &amp; Assessment Breakdown</h3>
-        <div style="overflow-x: auto;">
+        <div class="subject-editor-wrap">
           <table class="subject-editor-table">
             <thead>
               <tr>
@@ -1755,6 +1864,7 @@
             </tbody>
           </table>
         </div>
+        <div class="table-scroll-hint no-print">Swipe horizontally &rarr; to view all mark columns</div>
 
         <div id="liveMarksSummary" class="live-marks-summary" aria-live="polite">
           <span>Total: <strong id="liveTotal">0</strong>/600</span>
@@ -2346,10 +2456,10 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td class="sub-name-cell">${sub}</td>
-            <td><input id="sub_ut1_${i}" type="number" min="0" max="100" value="0" aria-label="${sub} UT1"></td>
-            <td><input id="sub_ut2_${i}" type="number" min="0" max="100" value="0" aria-label="${sub} UT2"></td>
-            <td><input id="sub_theory_${i}" type="number" min="0" max="100" value="0" aria-label="${sub} Theory"></td>
-            <td><input id="sub_practical_${i}" type="number" min="0" max="100" value="0" aria-label="${sub} Practical"></td>
+            <td><input id="sub_ut1_${i}" type="number" min="0" max="100" value="0" inputmode="numeric" pattern="[0-9]*" aria-label="${sub} UT1"></td>
+            <td><input id="sub_ut2_${i}" type="number" min="0" max="100" value="0" inputmode="numeric" pattern="[0-9]*" aria-label="${sub} UT2"></td>
+            <td><input id="sub_theory_${i}" type="number" min="0" max="100" value="0" inputmode="numeric" pattern="[0-9]*" aria-label="${sub} Theory"></td>
+            <td><input id="sub_practical_${i}" type="number" min="0" max="100" value="0" inputmode="numeric" pattern="[0-9]*" aria-label="${sub} Practical"></td>
             <td class="cell-total" id="sub_total_cell_${i}">0</td>
             <td class="cell-grade" id="sub_grade_cell_${i}">D2</td>
           `;
