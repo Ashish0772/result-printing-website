@@ -796,10 +796,12 @@
     .class-row-split {
       display: flex;
       align-items: baseline;
+      justify-content: space-between;
+      width: 100%;
     }
 
     .roll-part {
-      width: 90mm;
+      width: 66mm;
       display: flex;
       align-items: baseline;
       flex-shrink: 0;
@@ -808,13 +810,25 @@
     .class-part {
       display: flex;
       align-items: baseline;
-      margin-left: 6mm;
+      flex-shrink: 0;
     }
 
     .sec-part {
       display: flex;
       align-items: baseline;
-      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .rank-part {
+      display: flex;
+      align-items: baseline;
+      flex-shrink: 0;
+    }
+
+    .total-marks-part {
+      display: flex;
+      align-items: baseline;
+      flex-shrink: 0;
     }
 
     /* Tables Area */
@@ -2332,10 +2346,32 @@
         return row ? row.grade : 'D2';
       };
 
+      function getStudentTotalMarks(s) {
+        if (!s || typeof s !== 'object') return 0;
+        if (Array.isArray(s.subjectDetails) && s.subjectDetails.length > 0) {
+          return s.subjectDetails.reduce((sum, d) => sum + (Number(d?.total) || 0), 0);
+        }
+        if (Array.isArray(s.marks) && s.marks.length > 0) {
+          return s.marks.reduce((sum, m) => sum + (Number(m) || 0), 0);
+        }
+        return 0;
+      }
+
+      function getStudentMaxMarks(s) {
+        if (!s || typeof s !== 'object') return 600;
+        if (Array.isArray(s.subjectDetails) && s.subjectDetails.length > 0) {
+          return s.subjectDetails.length * 100;
+        }
+        if (Array.isArray(s.marks) && s.marks.length > 0) {
+          return s.marks.length * 100;
+        }
+        return 600;
+      }
+
       const calculateTotals = s => {
-        const total = (s.marks || []).reduce((a, b) => a + Number(b || 0), 0);
-        const max = 600; // 6 subjects * 100
-        const pct = (total / max) * 100;
+        const total = getStudentTotalMarks(s);
+        const max = getStudentMaxMarks(s);
+        const pct = max > 0 ? (total / max) * 100 : 0;
         const grade = getGrade(pct);
         return { total, max, pct, grade };
       };
@@ -2346,6 +2382,69 @@
         el.textContent = msg;
         el.style.color = isError ? '#dc2626' : '#0f766e';
       };
+
+      function isValidStudentRecord(s) {
+        if (!s || typeof s !== 'object') return false;
+        if (s.status === 'error' || s.isInvalid) return false;
+        const name = clean(s.name);
+        if (!name) return false;
+        const cls = getEffectiveClass(s.className);
+        const sec = getEffectiveSection(s.section);
+        if (!cls || !sec) return false;
+
+        const details = Array.isArray(s.subjectDetails) ? s.subjectDetails : null;
+        const marks = Array.isArray(s.marks) ? s.marks : null;
+        if (!details && !marks) return false;
+        if (details && details.length === 0) return false;
+        if (marks && marks.length === 0) return false;
+
+        if (details) {
+          for (const d of details) {
+            if (!d || typeof d !== 'object') return false;
+            const t = Number(d.total);
+            if (!Number.isFinite(t) || t < 0) return false;
+          }
+        }
+        if (marks) {
+          for (const m of marks) {
+            const num = Number(m);
+            if (!Number.isFinite(num) || num < 0) return false;
+          }
+        }
+        const total = getStudentTotalMarks(s);
+        if (!Number.isFinite(total) || total < 0) return false;
+        return true;
+      }
+
+      function getStudentRank(s, contextList = students) {
+        if (!isValidStudentRecord(s)) return null;
+        const cls = getEffectiveClass(s.className);
+        const sec = getEffectiveSection(s.section);
+        if (!cls || !sec) return null;
+
+        if (!Array.isArray(contextList) || contextList.length === 0) {
+          if (s.rank && Number.isInteger(Number(s.rank)) && Number(s.rank) >= 1) {
+            return Number(s.rank);
+          }
+          return null;
+        }
+
+        const validCohort = contextList.filter(other => {
+          if (!isValidStudentRecord(other)) return false;
+          return getEffectiveClass(other.className) === cls &&
+                 getEffectiveSection(other.section) === sec;
+        });
+
+        const sTotal = getStudentTotalMarks(s);
+        // Formula: Rank = 1 + number of valid students in the same class and section having strictly higher total obtained marks.
+        const strictlyHigherCount = validCohort.filter(other => {
+          if (s.id && other.id === s.id) return false;
+          if (other === s) return false;
+          return getStudentTotalMarks(other) > sTotal;
+        }).length;
+
+        return 1 + strictlyHigherCount;
+      }
 
       function calculateRanks() {
         const groups = new Map();
@@ -2358,16 +2457,20 @@
         });
 
         groups.forEach(groupStudents => {
-          groupStudents.sort((a, b) => calculateTotals(b).total - calculateTotals(a).total);
-          let lastTotal = -1;
-          let currentRank = 0;
-          groupStudents.forEach((s, idx) => {
-            const t = calculateTotals(s).total;
-            if (t !== lastTotal) {
-              currentRank = idx + 1;
-              lastTotal = t;
+          const validStudents = groupStudents.filter(isValidStudentRecord);
+
+          groupStudents.forEach(s => {
+            if (!isValidStudentRecord(s)) {
+              s.rank = null;
+              return;
             }
-            s.rank = currentRank;
+            const sTotal = getStudentTotalMarks(s);
+            // Formula: Rank = 1 + number of valid students in the same class and section having strictly higher total obtained marks.
+            const strictlyHigherCount = validStudents.filter(other => {
+              if (other === s) return false;
+              return getStudentTotalMarks(other) > sTotal;
+            }).length;
+            s.rank = 1 + strictlyHigherCount;
           });
         });
       }
@@ -2540,10 +2643,28 @@
             s.subjectDetails = details;
             s.marks = details.map(d => d.total);
             calculateRanks();
+            if ($('liveRank')) $('liveRank').textContent = (s.rank && s.rank >= 1) ? String(s.rank) : 'Rank unavailable';
             if (selectedId === editingId) {
               const scaler = $('previewScaler');
               if (scaler) scaler.innerHTML = reportHtml(s);
             }
+          }
+        } else {
+          const candCls = clean($('studentClass')?.value) || clean($('className')?.value) || 'IX';
+          const candSec = clean($('studentSection')?.value) || clean($('section')?.value) || 'A';
+          const candName = clean($('studentName')?.value);
+          if (candName) {
+            const cand = {
+              name: candName,
+              className: candCls,
+              section: candSec,
+              subjectDetails: details,
+              marks: details.map(d => d.total)
+            };
+            const r = getStudentRank(cand, students);
+            if ($('liveRank')) $('liveRank').textContent = (r && r >= 1) ? String(r) : 'Rank unavailable';
+          } else {
+            if ($('liveRank')) $('liveRank').textContent = '—';
           }
         }
       }
@@ -2570,6 +2691,21 @@
               grade: getGrade(total)
             };
           });
+        }
+
+        const totals = calculateTotals(s);
+        const totalMarksStr = `${totals.total} / ${totals.max}`;
+
+        let displayRank = 'Rank unavailable';
+        if (isValidStudentRecord(s)) {
+          if (s.rank && Number.isInteger(Number(s.rank)) && Number(s.rank) >= 1) {
+            displayRank = String(s.rank);
+          } else {
+            const computedRank = getStudentRank(s, students);
+            if (computedRank && computedRank >= 1) {
+              displayRank = String(computedRank);
+            }
+          }
         }
 
         return `
@@ -2614,6 +2750,12 @@
           </div>
           <div class="sec-part">
             <span>SECTION : &nbsp;${escapeHtml(String(studentSection).toUpperCase())}</span>
+          </div>
+          <div class="rank-part">
+            <span>CLASS RANK: ${escapeHtml(String(displayRank))}</span>
+          </div>
+          <div class="total-marks-part">
+            <span>TOTAL MARKS: ${escapeHtml(String(totalMarksStr))}</span>
           </div>
         </div>
       </div>
@@ -2794,7 +2936,7 @@
               <div class="student-row ${isSel ? 'selected' : ''}" data-select="${escapeHtml(s.id)}">
                 <div class="s-info">
                   <span class="s-name">${escapeHtml(s.name)}</span>
-                  <span class="s-meta">Roll: ${escapeHtml(s.roll || '—')} · Class: ${escapeHtml(s.className || 'IX')}-${escapeHtml(s.section || 'A')} · ${t.pct.toFixed(1)}% (${t.grade})</span>
+                  <span class="s-meta">Roll: ${escapeHtml(s.roll || '—')} · Class: ${escapeHtml(s.className || 'IX')}-${escapeHtml(s.section || 'A')} · Rank: ${s.rank ? s.rank : '—'} · Total: ${t.total}/${t.max} · ${t.pct.toFixed(1)}% (${t.grade})</span>
                 </div>
                 <div class="s-actions">
                   <button class="secondary edit-btn" data-edit="${escapeHtml(s.id)}" title="Edit student">Edit</button>
@@ -3289,21 +3431,23 @@
 
       function parseSubjectMark(row, subName, fieldKey) {
         const subClean = subName.toLowerCase().replace(/[^a-z]/g, '');
-        const target = subClean + fieldKey;
-        for (const k of Object.keys(row)) {
-          const nk = normalizeHeader(k);
-          if (nk === target || nk === target + 'marks' || nk === target + 'mark') {
-            const v = Number(row[k]);
-            return Number.isFinite(v) ? v : 0;
-          }
-        }
-        // Check generic subject marks if field is theory/total
-        if (fieldKey === 'theory' || fieldKey === 'total') {
+        const subAliases = subClean === 'socialstudies' ? ['socialstudies', 'sst'] : [subClean];
+        for (const subAlias of subAliases) {
+          const target = subAlias + fieldKey;
           for (const k of Object.keys(row)) {
             const nk = normalizeHeader(k);
-            if (nk === subClean || nk === subClean + 'marks' || nk === subClean + 'mark') {
+            if (nk === target || nk === target + 'marks' || nk === target + 'mark') {
               const v = Number(row[k]);
               return Number.isFinite(v) ? v : 0;
+            }
+          }
+          if (fieldKey === 'theory' || fieldKey === 'total') {
+            for (const k of Object.keys(row)) {
+              const nk = normalizeHeader(k);
+              if (nk === subAlias || nk === subAlias + 'marks' || nk === subAlias + 'mark') {
+                const v = Number(row[k]);
+                return Number.isFinite(v) ? v : 0;
+              }
             }
           }
         }
@@ -3726,6 +3870,7 @@
 
       // Direct PDF Downloads using html2pdf (Guaranteed A4 Landscape, 0 margin, no browser headers/footers)
       $('downloadSinglePdf')?.addEventListener('click', async () => {
+        calculateRanks();
         const filtered = getFilteredStudents();
         const s = filtered.find(x => x.id === selectedId) || filtered[0] || students[0];
         if (!s) {
@@ -3774,6 +3919,7 @@
       });
 
       $('downloadBulkPdf')?.addEventListener('click', async () => {
+        calculateRanks();
         const toPrint = getFilteredStudents();
         if (!toPrint.length) {
           setStatus('No students available to download.', true);

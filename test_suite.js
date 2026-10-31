@@ -31,20 +31,23 @@ function extractField(row, aliases) {
 
 function parseSubjectMark(row, subName, fieldKey) {
   const subClean = subName.toLowerCase().replace(/[^a-z]/g, '');
-  const target = subClean + fieldKey;
-  for (const k of Object.keys(row)) {
-    const nk = normalizeHeader(k);
-    if (nk === target || nk === target + 'marks' || nk === target + 'mark') {
-      const v = Number(row[k]);
-      return Number.isFinite(v) ? v : 0;
-    }
-  }
-  if (fieldKey === 'theory' || fieldKey === 'total') {
+  const subAliases = subClean === 'socialstudies' ? ['socialstudies', 'sst'] : [subClean];
+  for (const subAlias of subAliases) {
+    const target = subAlias + fieldKey;
     for (const k of Object.keys(row)) {
       const nk = normalizeHeader(k);
-      if (nk === subClean || nk === subClean + 'marks' || nk === subClean + 'mark') {
+      if (nk === target || nk === target + 'marks' || nk === target + 'mark') {
         const v = Number(row[k]);
         return Number.isFinite(v) ? v : 0;
+      }
+    }
+    if (fieldKey === 'theory' || fieldKey === 'total') {
+      for (const k of Object.keys(row)) {
+        const nk = normalizeHeader(k);
+        if (nk === subAlias || nk === subAlias + 'marks' || nk === subAlias + 'mark') {
+          const v = Number(row[k]);
+          return Number.isFinite(v) ? v : 0;
+        }
       }
     }
   }
@@ -197,8 +200,153 @@ const school = {
   section: 'A'
 };
 
-function generateTestReport(s) {
-  const details = s.subjectDetails;
+function getStudentTotalMarks(s) {
+  if (!s || typeof s !== 'object') return 0;
+  if (Array.isArray(s.subjectDetails) && s.subjectDetails.length > 0) {
+    return s.subjectDetails.reduce((sum, d) => sum + (Number(d?.total) || 0), 0);
+  }
+  if (Array.isArray(s.marks) && s.marks.length > 0) {
+    return s.marks.reduce((sum, m) => sum + (Number(m) || 0), 0);
+  }
+  return 0;
+}
+
+function getStudentMaxMarks(s) {
+  if (!s || typeof s !== 'object') return 600;
+  if (Array.isArray(s.subjectDetails) && s.subjectDetails.length > 0) {
+    return s.subjectDetails.length * 100;
+  }
+  if (Array.isArray(s.marks) && s.marks.length > 0) {
+    return s.marks.length * 100;
+  }
+  return 600;
+}
+
+function isValidStudentRecord(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (s.status === 'error' || s.isInvalid) return false;
+  const name = clean(s.name);
+  if (!name) return false;
+  const cls = clean(s.className || s.cls);
+  const sec = clean(s.section || s.sec);
+  if (!cls || !sec) return false;
+
+  const details = Array.isArray(s.subjectDetails) ? s.subjectDetails : null;
+  const marks = Array.isArray(s.marks) ? s.marks : null;
+  if (!details && !marks) return false;
+  if (details && details.length === 0) return false;
+  if (marks && marks.length === 0) return false;
+
+  if (details) {
+    for (const d of details) {
+      if (!d || typeof d !== 'object') return false;
+      const t = Number(d.total);
+      if (!Number.isFinite(t) || t < 0) return false;
+    }
+  }
+  if (marks) {
+    for (const m of marks) {
+      const num = Number(m);
+      if (!Number.isFinite(num) || num < 0) return false;
+    }
+  }
+  const total = getStudentTotalMarks(s);
+  if (!Number.isFinite(total) || total < 0) return false;
+  return true;
+}
+
+function calculateRanksForList(studentList) {
+  const groups = new Map();
+  studentList.forEach(s => {
+    const cls = clean(s.className || s.cls).toUpperCase();
+    const sec = clean(s.section || s.sec).toUpperCase();
+    const key = `${cls}__${sec}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  });
+
+  groups.forEach(groupStudents => {
+    const validStudents = groupStudents.filter(isValidStudentRecord);
+
+    groupStudents.forEach(s => {
+      if (!isValidStudentRecord(s)) {
+        s.rank = null;
+        return;
+      }
+      const sTotal = getStudentTotalMarks(s);
+      // Formula: Rank = 1 + number of valid students in the same class and section having strictly higher total obtained marks.
+      const strictlyHigherCount = validStudents.filter(other => {
+        if (other === s) return false;
+        return getStudentTotalMarks(other) > sTotal;
+      }).length;
+      s.rank = 1 + strictlyHigherCount;
+    });
+  });
+}
+
+function getStudentRank(s, contextList = []) {
+  if (!isValidStudentRecord(s)) return null;
+  const cls = clean(s.className || s.cls).toUpperCase();
+  const sec = clean(s.section || s.sec).toUpperCase();
+  if (!cls || !sec) return null;
+
+  if (!Array.isArray(contextList) || contextList.length === 0) {
+    if (s.rank && Number.isInteger(Number(s.rank)) && Number(s.rank) >= 1) {
+      return Number(s.rank);
+    }
+    return null;
+  }
+
+  const validCohort = contextList.filter(other => {
+    if (!isValidStudentRecord(other)) return false;
+    return clean(other.className || other.cls).toUpperCase() === cls &&
+           clean(other.section || other.sec).toUpperCase() === sec;
+  });
+
+  const sTotal = getStudentTotalMarks(s);
+  const strictlyHigherCount = validCohort.filter(other => {
+    if (s.id && other.id === s.id) return false;
+    if (other === s) return false;
+    return getStudentTotalMarks(other) > sTotal;
+  }).length;
+
+  return 1 + strictlyHigherCount;
+}
+
+function generateTestReport(s, contextList = []) {
+  let details = s.subjectDetails;
+  if (!Array.isArray(details) || details.length !== 6) {
+    const mList = Array.isArray(s.marks) ? s.marks : [0, 0, 0, 0, 0, 0];
+    details = SUBJECTS.map((sub, i) => {
+      const total = Number(mList[i] || 0);
+      return {
+        name: sub,
+        ut1: 0,
+        ut2: 0,
+        theory: total,
+        practical: 0,
+        total: total,
+        grade: getGrade(total)
+      };
+    });
+  }
+
+  const total = getStudentTotalMarks(s);
+  const max = getStudentMaxMarks(s);
+  const totalMarksStr = `${total} / ${max}`;
+
+  let displayRank = 'Rank unavailable';
+  if (isValidStudentRecord(s)) {
+    if (s.rank && Number.isInteger(Number(s.rank)) && Number(s.rank) >= 1) {
+      displayRank = String(s.rank);
+    } else if (Array.isArray(contextList) && contextList.length > 0) {
+      const computed = getStudentRank(s, contextList);
+      if (computed && computed >= 1) {
+        displayRank = String(computed);
+      }
+    }
+  }
+
   return `
     <article class="report-card">
       <div class="school-header">
@@ -214,8 +362,10 @@ function generateTestReport(s) {
         <div class="info-row"><span class="info-label">MOTHER'S NAME</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.mother)}</span></div>
         <div class="info-row class-row-split">
           <div class="roll-part"><span class="info-label">ROLL NO.</span><span class="info-colon">:</span><span class="info-val">${escapeHtml(s.roll)}</span></div>
-          <div class="class-part"><span>CLASS : &nbsp;${escapeHtml(s.className)}</span></div>
-          <div class="sec-part"><span>SECTION : &nbsp;${escapeHtml(s.section)}</span></div>
+          <div class="class-part"><span>CLASS : &nbsp;${escapeHtml(s.className || s.cls)}</span></div>
+          <div class="sec-part"><span>SECTION : &nbsp;${escapeHtml(s.section || s.sec)}</span></div>
+          <div class="rank-part"><span>CLASS RANK: ${escapeHtml(String(displayRank))}</span></div>
+          <div class="total-marks-part"><span>TOTAL MARKS: ${escapeHtml(String(totalMarksStr))}</span></div>
         </div>
       </div>
       <div class="tables-container">
@@ -256,6 +406,8 @@ function generateTestReport(s) {
   `;
 }
 
+// Abhijeet in a single student class context has Rank 1
+studentAbhijeet.rank = 1;
 const rendered = generateTestReport(studentAbhijeet);
 
 const criticalTerms = [
@@ -270,6 +422,8 @@ const criticalTerms = [
   'ROLL NO.',
   'CLASS : &nbsp;IX',
   'SECTION : &nbsp;A',
+  'CLASS RANK: 1',
+  'TOTAL MARKS: 437 / 600',
   'UNIT TEST',
   'SUBJECT',
   'UT-1',
@@ -296,18 +450,147 @@ criticalTerms.forEach(term => {
   }
 });
 
-// Also check font family definitions in index.html
+// Also check font family definitions and rank classes in index.html
 const indexHtml = fs.readFileSync('index.html', 'utf8');
-['Algerian', 'Calibri', '#17375d'].forEach(f => {
+['Algerian', 'Calibri', '#17375d', '.rank-part', '.total-marks-part', 'CLASS RANK:', 'TOTAL MARKS:'].forEach(f => {
   if (!indexHtml.includes(f)) {
-    console.log(`  MISSING CSS ASSET: "${f}"`);
+    console.log(`  MISSING CSS/HTML ASSET: "${f}"`);
     htmlAllPassed = false;
   }
 });
 
 console.log(`Report HTML reference specs check: ${htmlAllPassed ? 'ALL REFERENCE STRINGS AND STYLES PRESENT' : 'MISSING STRINGS'}`);
 
+console.log('\n=== TEST 4: Student Rank Calculation & Competition Ranking ===');
+let rankAllPassed = true;
+
+// 4.1 Specification Example: Class 10-A
+// Student A: 550 marks → Rank 1
+// Student B: 520 marks → Rank 2
+// Student C: 520 marks → Rank 2
+// Student D: 480 marks → Rank 4
+// Student E: 450 marks → Rank 5
+const testStudents10A = [
+  { id: '1', name: 'Student A', className: '10', section: 'A', marks: [100, 95, 95, 90, 85, 85] }, // 550
+  { id: '2', name: 'Student B', className: '10', section: 'A', marks: [90, 90, 85, 85, 85, 85] },  // 520
+  { id: '3', name: 'Student C', className: '10', section: 'A', marks: [92, 88, 85, 85, 85, 85] },  // 520
+  { id: '4', name: 'Student D', className: '10', section: 'A', marks: [80, 80, 80, 80, 80, 80] },  // 480
+  { id: '5', name: 'Student E', className: '10', section: 'A', marks: [75, 75, 75, 75, 75, 75] }   // 450
+];
+
+calculateRanksForList(testStudents10A);
+
+const expectedRanks = { 'Student A': 1, 'Student B': 2, 'Student C': 2, 'Student D': 4, 'Student E': 5 };
+let t4_1Passed = true;
+testStudents10A.forEach(s => {
+  const exp = expectedRanks[s.name];
+  const pass = s.rank === exp;
+  console.log(`  Test 4.1 [Class 10-A Competition Rank]: ${s.name} (${getStudentTotalMarks(s)} marks) -> Expected Rank ${exp}, got ${s.rank} : ${pass ? 'PASS' : 'FAIL'}`);
+  if (!pass) t4_1Passed = false;
+});
+if (!t4_1Passed) rankAllPassed = false;
+
+// 4.2 Equal marks at Rank 1 (Tied winners)
+const tiedWinners = [
+  { id: 't1', name: 'Topper 1', className: 'X', section: 'B', marks: [100, 100, 100, 100, 100, 100] }, // 600
+  { id: 't2', name: 'Topper 2', className: 'X', section: 'B', marks: [100, 100, 100, 100, 100, 100] }, // 600
+  { id: 't3', name: 'Follower', className: 'X', section: 'B', marks: [90, 90, 90, 90, 90, 90] }         // 540
+];
+calculateRanksForList(tiedWinners);
+const t4_2Passed = tiedWinners[0].rank === 1 && tiedWinners[1].rank === 1 && tiedWinners[2].rank === 3;
+console.log(`  Test 4.2 [Tied Rank 1 -> Next Rank 3]: ${t4_2Passed ? 'PASS' : 'FAIL'} (ranks=[${tiedWinners.map(s => s.rank).join(', ')}])`);
+if (!t4_2Passed) rankAllPassed = false;
+
+// 4.3 Section and Class Isolation (Compare only within same Class and Section)
+const mixedCohort = [
+  { id: 'm1', name: 'Class IX-A Star', className: 'IX', section: 'A', marks: [50, 50, 50, 50, 50, 50] }, // 300 -> Rank 1 in IX-A
+  { id: 'm2', name: 'Class IX-A Runner', className: 'IX', section: 'A', marks: [40, 40, 40, 40, 40, 40] }, // 240 -> Rank 2 in IX-A
+  { id: 'm3', name: 'Class IX-B High', className: 'IX', section: 'B', marks: [90, 90, 90, 90, 90, 90] }, // 540 -> Rank 1 in IX-B
+  { id: 'm4', name: 'Class X-A Topper', className: 'X', section: 'A', marks: [95, 95, 95, 95, 95, 95] }   // 570 -> Rank 1 in X-A
+];
+calculateRanksForList(mixedCohort);
+const t4_3Passed = mixedCohort[0].rank === 1 && mixedCohort[1].rank === 2 && mixedCohort[2].rank === 1 && mixedCohort[3].rank === 1;
+console.log(`  Test 4.3 [Section & Class Independence]: ${t4_3Passed ? 'PASS' : 'FAIL'} (IX-A Star Rank=${mixedCohort[0].rank}, IX-B High Rank=${mixedCohort[2].rank}, X-A Topper Rank=${mixedCohort[3].rank})`);
+if (!t4_3Passed) rankAllPassed = false;
+
+// 4.4 Incomplete / Invalid records handling
+const cohortWithInvalid = [
+  { id: 'v1', name: 'Valid High', className: 'IX', section: 'C', marks: [80, 80, 80, 80, 80, 80] }, // 480 -> Rank 1
+  { id: 'inv1', name: '', className: 'IX', section: 'C', marks: [90, 90, 90, 90, 90, 90] },         // Missing name -> Invalid
+  { id: 'inv2', name: 'No Marks', className: 'IX', section: 'C', marks: [] },                         // Missing marks -> Invalid
+  { id: 'v2', name: 'Valid Low', className: 'IX', section: 'C', marks: [60, 60, 60, 60, 60, 60] }   // 360 -> Rank 2
+];
+calculateRanksForList(cohortWithInvalid);
+const t4_4Passed = cohortWithInvalid[0].rank === 1 &&
+                   cohortWithInvalid[1].rank === null &&
+                   cohortWithInvalid[2].rank === null &&
+                   cohortWithInvalid[3].rank === 2;
+console.log(`  Test 4.4 [Invalid records ignored and given null rank]: ${t4_4Passed ? 'PASS' : 'FAIL'} (validHigh=${cohortWithInvalid[0].rank}, invalid1=${cohortWithInvalid[1].rank}, validLow=${cohortWithInvalid[3].rank})`);
+if (!t4_4Passed) rankAllPassed = false;
+
+// 4.5 "Rank unavailable" when class data unavailable or record invalid
+const standaloneStudent = { name: 'Lone Ranger', marks: [50, 50, 50, 50, 50, 50], className: 'IX', section: 'A' };
+const standaloneReport = generateTestReport(standaloneStudent, []);
+const t4_5Passed = standaloneReport.includes('CLASS RANK: Rank unavailable');
+console.log(`  Test 4.5 [Display 'Rank unavailable' when class data unavailable]: ${t4_5Passed ? 'PASS' : 'FAIL'}`);
+if (!t4_5Passed) rankAllPassed = false;
+
+// 4.6 Dynamic recalculation after Adding, Editing, Deleting
+const dynamicList = [
+  { id: 'd1', name: 'Alpha', className: 'VIII', section: 'A', marks: [60, 60, 60, 60, 60, 60] }, // 360
+  { id: 'd2', name: 'Beta', className: 'VIII', section: 'A', marks: [50, 50, 50, 50, 50, 50] }   // 300
+];
+calculateRanksForList(dynamicList);
+const initialPassed = dynamicList[0].rank === 1 && dynamicList[1].rank === 2;
+
+// ADD new student Gamma with 400 marks
+dynamicList.push({ id: 'd3', name: 'Gamma', className: 'VIII', section: 'A', marks: [70, 70, 70, 70, 60, 60] }); // 400
+calculateRanksForList(dynamicList);
+const afterAddPassed = dynamicList.find(s => s.name === 'Gamma').rank === 1 &&
+                       dynamicList.find(s => s.name === 'Alpha').rank === 2 &&
+                       dynamicList.find(s => s.name === 'Beta').rank === 3;
+
+// EDIT Beta's marks to 500
+const beta = dynamicList.find(s => s.name === 'Beta');
+beta.marks = [90, 90, 80, 80, 80, 80]; // 500
+calculateRanksForList(dynamicList);
+const afterEditPassed = dynamicList.find(s => s.name === 'Beta').rank === 1 &&
+                        dynamicList.find(s => s.name === 'Gamma').rank === 2 &&
+                        dynamicList.find(s => s.name === 'Alpha').rank === 3;
+
+// DELETE Beta
+const dynamicRemaining = dynamicList.filter(s => s.name !== 'Beta');
+calculateRanksForList(dynamicRemaining);
+const afterDeletePassed = dynamicRemaining.find(s => s.name === 'Gamma').rank === 1 &&
+                          dynamicRemaining.find(s => s.name === 'Alpha').rank === 2;
+
+const t4_6Passed = initialPassed && afterAddPassed && afterEditPassed && afterDeletePassed;
+console.log(`  Test 4.6 [Recalculation on Add, Edit, Delete]: ${t4_6Passed ? 'PASS' : 'FAIL'}`);
+if (!t4_6Passed) rankAllPassed = false;
+
+// 4.7 Bulk Import sample-results.csv verification
+const importedStudents = sampleRows.map((r, i) => validateAndParseImportedRow(r, i, new Set()).student);
+calculateRanksForList(importedStudents);
+const seema = importedStudents.find(s => s.name === 'SEEMA KUMARI');
+const abhijeet = importedStudents.find(s => s.name === 'ABHIJEET PANDEY');
+const rohan = importedStudents.find(s => s.name === 'ROHAN SHARMA');
+const priya = importedStudents.find(s => s.name === 'PRIYA KUMARI');
+const vikram = importedStudents.find(s => s.name === 'VIKRAM SINGH');
+
+const t4_7Passed = seema.rank === 1 && abhijeet.rank === 2 && rohan.rank === 3 &&
+                   priya.rank === 1 && vikram.rank === 2;
+console.log(`  Test 4.7 [sample-results.csv Ranks]: ${t4_7Passed ? 'PASS' : 'FAIL'} (IX-A: Seema=${seema.rank}, Abhijeet=${abhijeet.rank}, Rohan=${rohan.rank} | IX-B: Priya=${priya.rank}, Vikram=${vikram.rank})`);
+if (!t4_7Passed) rankAllPassed = false;
+
+// 4.8 Marksheet Display contains TOTAL MARKS and CLASS RANK
+const abhijeetReport = generateTestReport(abhijeet, importedStudents);
+const hasTotalMarksField = abhijeetReport.includes('TOTAL MARKS: 437 / 600');
+const hasClassRankField = abhijeetReport.includes('CLASS RANK: 2');
+const t4_8Passed = hasTotalMarksField && hasClassRankField;
+console.log(`  Test 4.8 [Marksheet display fields TOTAL MARKS and CLASS RANK]: ${t4_8Passed ? 'PASS' : 'FAIL'} (totalMarks=${hasTotalMarksField}, classRank=${hasClassRankField})`);
+if (!t4_8Passed) rankAllPassed = false;
+
 console.log('\n=== OVERALL TEST SUITE SUMMARY ===');
-const grandPass = sampleAllValid && edgeAllPassed && htmlAllPassed;
+const grandPass = sampleAllValid && edgeAllPassed && htmlAllPassed && rankAllPassed;
 console.log(`Overall Test Suite Status: ${grandPass ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
 process.exit(grandPass ? 0 : 1);
