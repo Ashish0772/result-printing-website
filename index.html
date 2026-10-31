@@ -1907,11 +1907,12 @@
           <span>Percentage: <strong id="livePct">0.00%</strong></span>
           <span>Grade: <strong id="liveGrade">D2</strong></span>
           <span>Live Rank: <strong id="liveRank">1</strong></span>
+          <span>Remark: <strong id="liveRemark">POOR</strong></span>
         </div>
 
         <div class="field full" style="margin-top:10px">
-          <label for="remarks">Remarks (e.g. EXCELLENT!)</label>
-          <input id="remarks" placeholder="e.g. EXCELLENT!" value="EXCELLENT!">
+          <label for="remarks">Performance Remarks (Auto-calculated from overall percentage)</label>
+          <input id="remarks" readonly style="background:#f1f5f9; cursor:default; font-weight:600;" placeholder="Auto-calculated from marks" value="POOR">
         </div>
 
         <div class="actions">
@@ -2282,7 +2283,7 @@
                   admission: clean(s.admission),
                   subjectDetails: details,
                   marks: marks,
-                  remarks: clean(s.remarks) || 'EXCELLENT!'
+                  remarks: getStudentRemark({ subjectDetails: details, marks })
                 };
               });
             } else {
@@ -2333,7 +2334,7 @@
               { name: 'COMPUTER', ut1: 16, ut2: 21, theory: 41, practical: 45, total: 86, grade: 'A2' }
             ],
             marks: [62, 63, 90, 79, 57, 86],
-            remarks: 'EXCELLENT!'
+            remarks: 'GOOD'
           }
         ];
         saveToStorage();
@@ -2368,12 +2369,58 @@
         return 600;
       }
 
+      function getRemarkForPercentage(pct) {
+        if (pct === null || pct === undefined || pct === '') return '';
+        const p = Number(pct);
+        if (!Number.isFinite(p) || p < 0) return '';
+        if (p >= 90) return 'EXCELLENT';
+        if (p >= 75) return 'VERY GOOD';
+        if (p >= 50) return 'GOOD';
+        return 'POOR';
+      }
+
+      function getStudentRemark(s) {
+        if (!s || typeof s !== 'object') return '';
+        if (s.status === 'error' || s.isInvalid) return '';
+
+        const details = Array.isArray(s.subjectDetails) ? s.subjectDetails : null;
+        const marks = Array.isArray(s.marks) ? s.marks : null;
+        if (!details && !marks) return '';
+        if (details && details.length === 0) return '';
+        if (marks && marks.length === 0) return '';
+
+        if (details) {
+          for (const d of details) {
+            if (!d || typeof d !== 'object') return '';
+            if (d.total === undefined || d.total === null || d.total === '') return '';
+            const t = Number(d.total);
+            if (!Number.isFinite(t) || t < 0) return '';
+          }
+        } else if (marks) {
+          for (const m of marks) {
+            if (m === undefined || m === null || m === '') return '';
+            const num = Number(m);
+            if (!Number.isFinite(num) || num < 0) return '';
+          }
+        }
+
+        const total = getStudentTotalMarks(s);
+        const max = getStudentMaxMarks(s);
+        if (!Number.isFinite(total) || !Number.isFinite(max) || max <= 0) return '';
+
+        const pct = (total / max) * 100;
+        if (!Number.isFinite(pct)) return '';
+
+        return getRemarkForPercentage(pct);
+      }
+
       const calculateTotals = s => {
         const total = getStudentTotalMarks(s);
         const max = getStudentMaxMarks(s);
         const pct = max > 0 ? (total / max) * 100 : 0;
         const grade = getGrade(pct);
-        return { total, max, pct, grade };
+        const remark = getStudentRemark(s);
+        return { total, max, pct, grade, remark };
       };
 
       const setStatus = (msg, isError = false) => {
@@ -2632,16 +2679,20 @@
         const max = 600;
         const pct = (total / max) * 100;
         const grade = getGrade(pct);
+        const remark = getRemarkForPercentage(pct);
 
         if ($('liveTotal')) $('liveTotal').textContent = String(total);
         if ($('livePct')) $('livePct').textContent = pct.toFixed(2) + '%';
         if ($('liveGrade')) $('liveGrade').textContent = grade;
+        if ($('liveRemark')) $('liveRemark').textContent = remark || 'POOR';
+        if ($('remarks')) $('remarks').value = remark || 'POOR';
 
         if (editingId) {
           const s = students.find(x => x.id === editingId);
           if (s) {
             s.subjectDetails = details;
             s.marks = details.map(d => d.total);
+            s.remarks = remark;
             calculateRanks();
             if ($('liveRank')) $('liveRank').textContent = (s.rank && s.rank >= 1) ? String(s.rank) : 'Rank unavailable';
             if (selectedId === editingId) {
@@ -2659,7 +2710,8 @@
               className: candCls,
               section: candSec,
               subjectDetails: details,
-              marks: details.map(d => d.total)
+              marks: details.map(d => d.total),
+              remarks: remark
             };
             const r = getStudentRank(cand, students);
             if ($('liveRank')) $('liveRank').textContent = (r && r >= 1) ? String(r) : 'Rank unavailable';
@@ -2813,7 +2865,7 @@
       </div>
 
       <div class="remarks-box">
-        <span>REMARKS: &nbsp;${escapeHtml(String(s.remarks || 'EXCELLENT').toUpperCase())}</span>
+        <span>REMARKS: &nbsp;${escapeHtml(totals.remark || getStudentRemark(s) || String(s.remarks || '').toUpperCase())}</span>
       </div>
 
       <table class="grade-table">
@@ -2917,6 +2969,9 @@
 
       function render() {
         calculateRanks();
+        students.forEach(s => {
+          s.remarks = getStudentRemark(s);
+        });
         updateGroupDropdown();
 
         // 1. Render Student List
@@ -2936,7 +2991,7 @@
               <div class="student-row ${isSel ? 'selected' : ''}" data-select="${escapeHtml(s.id)}">
                 <div class="s-info">
                   <span class="s-name">${escapeHtml(s.name)}</span>
-                  <span class="s-meta">Roll: ${escapeHtml(s.roll || '—')} · Class: ${escapeHtml(s.className || 'IX')}-${escapeHtml(s.section || 'A')} · Rank: ${s.rank ? s.rank : '—'} · Total: ${t.total}/${t.max} · ${t.pct.toFixed(1)}% (${t.grade})</span>
+                  <span class="s-meta">Roll: ${escapeHtml(s.roll || '—')} · Class: ${escapeHtml(s.className || 'IX')}-${escapeHtml(s.section || 'A')} · Rank: ${s.rank ? s.rank : '—'} · Total: ${t.total}/${t.max} · ${t.pct.toFixed(1)}% (${t.grade}) · ${escapeHtml(s.remarks || t.remark)}</span>
                 </div>
                 <div class="s-actions">
                   <button class="secondary edit-btn" data-edit="${escapeHtml(s.id)}" title="Edit student">Edit</button>
@@ -3013,7 +3068,7 @@
         $('studentSection').value = $('section').value || 'A';
         $('rollNo').value = '';
         $('admissionNo').value = '';
-        $('remarks').value = 'EXCELLENT!';
+        $('remarks').value = '';
         $('saveStudent').textContent = 'Add Student';
 
         SUBJECTS.forEach((_, i) => {
@@ -3044,7 +3099,7 @@
         $('studentSection').value = s.section || '';
         $('rollNo').value = s.roll || '';
         $('admissionNo').value = s.admission || '';
-        $('remarks').value = s.remarks || 'EXCELLENT!';
+        $('remarks').value = getStudentRemark(s);
         $('saveStudent').textContent = 'Save Changes';
 
         const details = s.subjectDetails || [];
@@ -3110,6 +3165,7 @@
 
         const details = readSubjectDetailsFromForm();
         const marks = details.map(d => d.total);
+        const autoRemark = getStudentRemark({ subjectDetails: details, marks });
 
         if (editingId) {
           const s = students.find(x => x.id === editingId);
@@ -3123,7 +3179,7 @@
             s.admission = clean($('admissionNo').value);
             s.subjectDetails = details;
             s.marks = marks;
-            s.remarks = clean($('remarks').value) || 'EXCELLENT!';
+            s.remarks = autoRemark;
           }
           setStatus(`Updated student "${name}".`);
         } else {
@@ -3138,7 +3194,7 @@
             admission: clean($('admissionNo').value),
             subjectDetails: details,
             marks: marks,
-            remarks: clean($('remarks').value) || 'EXCELLENT!'
+            remarks: autoRemark
           };
           students.push(newStudent);
           selectedId = newStudent.id;
@@ -3494,7 +3550,6 @@
         });
 
         const marks = subjectDetails.map(d => d.total);
-        const remarks = clean(extractField(rawRow, ['remarks', 'remark', 'comments'])) || 'EXCELLENT!';
 
         const student = {
           id: 's' + Date.now() + Math.random().toString(16).slice(2, 6) + '_' + index,
@@ -3507,8 +3562,9 @@
           admission: clean(extractField(rawRow, ['admissionno', 'admissionnumber', 'admno'])),
           subjectDetails: subjectDetails,
           marks: marks,
-          remarks: remarks
+          remarks: ''
         };
+        student.remarks = getStudentRemark(student);
 
         return {
           index: index + 1,

@@ -15,6 +15,16 @@ function getGrade(total) {
   return 'D2';
 }
 
+function getRemarkForPercentage(pct) {
+  if (pct === null || pct === undefined || pct === '') return '';
+  const p = Number(pct);
+  if (!Number.isFinite(p) || p < 0) return '';
+  if (p >= 90) return 'EXCELLENT';
+  if (p >= 75) return 'VERY GOOD';
+  if (p >= 50) return 'GOOD';
+  return 'POOR';
+}
+
 function normalizeHeader(h) {
   return String(h || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -87,16 +97,18 @@ function validateAndParseImportedRow(rawRow, index, existingRollSet, defaultClas
   });
 
   const marks = subjectDetails.map(d => d.total);
-  const remarks = clean(extractField(rawRow, ['remarks', 'remark', 'comments'])) || 'EXCELLENT!';
+  const student = {
+    name, cls, sec, roll,
+    father: clean(extractField(rawRow, ['fathername', 'father', 'fathersname'])),
+    mother: clean(extractField(rawRow, ['mothername', 'mother', 'mothersname'])),
+    subjectDetails, marks,
+    remarks: ''
+  };
+  student.remarks = getStudentRemark(student);
 
   return {
     index: index + 1,
-    student: {
-      name, cls, sec, roll,
-      father: clean(extractField(rawRow, ['fathername', 'father', 'fathersname'])),
-      mother: clean(extractField(rawRow, ['mothername', 'mother', 'mothersname'])),
-      subjectDetails, marks, remarks
-    },
+    student,
     errors, warnings,
     status: errors.length ? 'error' : (warnings.length ? 'duplicate' : 'valid')
   };
@@ -168,7 +180,7 @@ const studentAbhijeet = {
   className: 'IX',
   section: 'A',
   roll: '2',
-  remarks: 'EXCELLENT!',
+  remarks: 'GOOD',
   subjectDetails: [
     { name: 'MATHS', ut1: 15, ut2: 15, theory: 48, practical: 14, total: 62, grade: 'B2' },
     { name: 'SCIENCE', ut1: 13, ut2: 15, theory: 49, practical: 14, total: 63, grade: 'B2' },
@@ -220,6 +232,50 @@ function getStudentMaxMarks(s) {
     return s.marks.length * 100;
   }
   return 600;
+}
+
+function getStudentRemark(s) {
+  if (!s || typeof s !== 'object') return '';
+  if (s.status === 'error' || s.isInvalid) return '';
+
+  const details = Array.isArray(s.subjectDetails) ? s.subjectDetails : null;
+  const marks = Array.isArray(s.marks) ? s.marks : null;
+  if (!details && !marks) return '';
+  if (details && details.length === 0) return '';
+  if (marks && marks.length === 0) return '';
+
+  if (details) {
+    for (const d of details) {
+      if (!d || typeof d !== 'object') return '';
+      if (d.total === undefined || d.total === null || d.total === '') return '';
+      const t = Number(d.total);
+      if (!Number.isFinite(t) || t < 0) return '';
+    }
+  } else if (marks) {
+    for (const m of marks) {
+      if (m === undefined || m === null || m === '') return '';
+      const num = Number(m);
+      if (!Number.isFinite(num) || num < 0) return '';
+    }
+  }
+
+  const total = getStudentTotalMarks(s);
+  const max = getStudentMaxMarks(s);
+  if (!Number.isFinite(total) || !Number.isFinite(max) || max <= 0) return '';
+
+  const pct = (total / max) * 100;
+  if (!Number.isFinite(pct)) return '';
+
+  return getRemarkForPercentage(pct);
+}
+
+function calculateTotals(s) {
+  const total = getStudentTotalMarks(s);
+  const max = getStudentMaxMarks(s);
+  const pct = max > 0 ? (total / max) * 100 : 0;
+  const grade = getGrade(pct);
+  const remark = getStudentRemark(s);
+  return { total, max, pct, grade, remark };
 }
 
 function isValidStudentRecord(s) {
@@ -433,7 +489,7 @@ const criticalTerms = [
   'PRACTICAL',
   'TOTAL(100)',
   'GRADE',
-  'REMARKS: &nbsp;EXCELLENT!',
+  'REMARKS: &nbsp;GOOD',
   'MARKS RANGE',
   'BELOW 33',
   'ISSUE DATE: &nbsp;04/11/26',
@@ -590,7 +646,151 @@ const t4_8Passed = hasTotalMarksField && hasClassRankField;
 console.log(`  Test 4.8 [Marksheet display fields TOTAL MARKS and CLASS RANK]: ${t4_8Passed ? 'PASS' : 'FAIL'} (totalMarks=${hasTotalMarksField}, classRank=${hasClassRankField})`);
 if (!t4_8Passed) rankAllPassed = false;
 
+console.log('\n=== TEST 5: Automatic Student Performance Remarks Verification ===');
+let remarksAllPassed = true;
+
+// 5.1 Test specified percentages: 95% (EXCELLENT), 80% (VERY GOOD), 65% (GOOD), 40% (POOR)
+const tierTests = [
+  { pct: 95, expected: 'EXCELLENT', label: '95% -> EXCELLENT' },
+  { pct: 80, expected: 'VERY GOOD', label: '80% -> VERY GOOD' },
+  { pct: 65, expected: 'GOOD', label: '65% -> GOOD' },
+  { pct: 40, expected: 'POOR', label: '40% -> POOR' }
+];
+let t5_1Passed = true;
+tierTests.forEach(tc => {
+  const actual = getRemarkForPercentage(tc.pct);
+  const pass = actual === tc.expected;
+  console.log(`  Test 5.1 [${tc.label}]: Expected "${tc.expected}", got "${actual}" : ${pass ? 'PASS' : 'FAIL'}`);
+  if (!pass) t5_1Passed = false;
+});
+if (!t5_1Passed) remarksAllPassed = false;
+
+// 5.2 Test boundary values: 100%, 90% (EXCELLENT), 89.99%, 75% (VERY GOOD), 74.99%, 50% (GOOD), 49.99%, 0% (POOR)
+const boundaryTests = [
+  { pct: 100, expected: 'EXCELLENT', label: 'Boundary 100% -> EXCELLENT' },
+  { pct: 90, expected: 'EXCELLENT', label: 'Boundary 90% -> EXCELLENT' },
+  { pct: 89.99, expected: 'VERY GOOD', label: 'Boundary 89.99% -> VERY GOOD' },
+  { pct: 75, expected: 'VERY GOOD', label: 'Boundary 75% -> VERY GOOD' },
+  { pct: 74.99, expected: 'GOOD', label: 'Boundary 74.99% -> GOOD' },
+  { pct: 50, expected: 'GOOD', label: 'Boundary 50% -> GOOD' },
+  { pct: 49.99, expected: 'POOR', label: 'Boundary 49.99% -> POOR' },
+  { pct: 0, expected: 'POOR', label: 'Boundary 0% -> POOR' }
+];
+let t5_2Passed = true;
+boundaryTests.forEach(tc => {
+  const actual = getRemarkForPercentage(tc.pct);
+  const pass = actual === tc.expected;
+  console.log(`  Test 5.2 [${tc.label}]: Expected "${tc.expected}", got "${actual}" : ${pass ? 'PASS' : 'FAIL'}`);
+  if (!pass) t5_2Passed = false;
+});
+if (!t5_2Passed) remarksAllPassed = false;
+
+// 5.3 Missing / Invalid marks handling (safe handling, no misleading remark)
+const invalidRecords = [
+  { desc: 'Missing marks array', student: { name: 'No Marks', className: 'IX', section: 'A', marks: [] } },
+  { desc: 'Null student object', student: null },
+  { desc: 'Student with error status', student: { name: 'Err', className: 'IX', section: 'A', status: 'error', marks: [80, 80] } },
+  { desc: 'Student with isInvalid flag', student: { name: 'Inv', className: 'IX', section: 'A', isInvalid: true, marks: [80, 80] } },
+  { desc: 'Negative marks', student: { name: 'Neg', className: 'IX', section: 'A', marks: [50, -10, 60] } },
+  { desc: 'Missing mark entry (null in marks)', student: { name: 'Hole', className: 'IX', section: 'A', marks: [90, null, 90] } },
+  { desc: 'Non-numeric mark', student: { name: 'NaNMark', className: 'IX', section: 'A', marks: [90, 'abc', 90] } },
+  { desc: 'Invalid subjectDetails item', student: { name: 'BadSub', className: 'IX', section: 'A', subjectDetails: [{ total: 80 }, { total: null }] } }
+];
+let t5_3Passed = true;
+invalidRecords.forEach(tc => {
+  const actual = getStudentRemark(tc.student);
+  const pass = actual === '';
+  console.log(`  Test 5.3 [Safe missing/invalid marks - ${tc.desc}]: Expected "", got "${actual}" : ${pass ? 'PASS' : 'FAIL'}`);
+  if (!pass) t5_3Passed = false;
+});
+if (!t5_3Passed) remarksAllPassed = false;
+
+// 5.4 Dynamic calculation when student marks are edited
+const dynamicStudent = {
+  id: 'dyn_1',
+  name: 'Dynamic Student',
+  className: 'IX',
+  section: 'A',
+  roll: '10',
+  marks: [95, 95, 95, 95, 95, 95] // 570 / 600 = 95% -> EXCELLENT
+};
+const r1 = getStudentRemark(dynamicStudent);
+const step1 = r1 === 'EXCELLENT';
+
+// Edit to 80% (total 480)
+dynamicStudent.marks = [80, 80, 80, 80, 80, 80];
+const r2 = getStudentRemark(dynamicStudent);
+const step2 = r2 === 'VERY GOOD';
+
+// Edit to 65% (total 390)
+dynamicStudent.marks = [65, 65, 65, 65, 65, 65];
+const r3 = getStudentRemark(dynamicStudent);
+const step3 = r3 === 'GOOD';
+
+// Edit to 40% (total 240)
+dynamicStudent.marks = [40, 40, 40, 40, 40, 40];
+const r4 = getStudentRemark(dynamicStudent);
+const step4 = r4 === 'POOR';
+
+const t5_4Passed = step1 && step2 && step3 && step4;
+console.log(`  Test 5.4 [Dynamic update on mark change]: 95%->${r1}, 80%->${r2}, 65%->${r3}, 40%->${r4} : ${t5_4Passed ? 'PASS' : 'FAIL'}`);
+if (!t5_4Passed) remarksAllPassed = false;
+
+// 5.5 Marksheet PDF / HTML display test
+const student95 = { name: 'Top Student', marks: [95, 95, 95, 95, 95, 95], remarks: 'EXCELLENT' };
+const student80 = { name: 'High Student', marks: [80, 80, 80, 80, 80, 80], remarks: 'VERY GOOD' };
+const student65 = { name: 'Mid Student', marks: [65, 65, 65, 65, 65, 65], remarks: 'GOOD' };
+const student40 = { name: 'Low Student', marks: [40, 40, 40, 40, 40, 40], remarks: 'POOR' };
+
+const rep95 = generateTestReport(student95);
+const rep80 = generateTestReport(student80);
+const rep65 = generateTestReport(student65);
+const rep40 = generateTestReport(student40);
+
+const has95 = rep95.includes('REMARKS: &nbsp;EXCELLENT');
+const has80 = rep80.includes('REMARKS: &nbsp;VERY GOOD');
+const has65 = rep65.includes('REMARKS: &nbsp;GOOD');
+const has40 = rep40.includes('REMARKS: &nbsp;POOR');
+const t5_5Passed = has95 && has80 && has65 && has40;
+console.log(`  Test 5.5 [Report card HTML remarks display]: 95%=${has95}, 80%=${has80}, 65%=${has65}, 40%=${has40} : ${t5_5Passed ? 'PASS' : 'FAIL'}`);
+if (!t5_5Passed) remarksAllPassed = false;
+
+// 5.6 Bulk Import sample-results.csv dynamic remarks check
+// Seema: 487/600 = 81.17% -> VERY GOOD
+// Priya: 517/600 = 86.17% -> VERY GOOD
+// Abhijeet: 437/600 = 72.83% -> GOOD
+// Rohan: 416/600 = 69.33% -> GOOD
+// Vikram: 349/600 = 58.17% -> GOOD
+const t5_6Passed = seema.remarks === 'VERY GOOD' &&
+                   priya.remarks === 'VERY GOOD' &&
+                   abhijeet.remarks === 'GOOD' &&
+                   rohan.remarks === 'GOOD' &&
+                   vikram.remarks === 'GOOD';
+console.log(`  Test 5.6 [sample-results.csv Bulk Import Remarks]: ${t5_6Passed ? 'PASS' : 'FAIL'}`);
+console.log(`    Seema (${getStudentTotalMarks(seema)}/600 = 81.17%): ${seema.remarks} (Expected: VERY GOOD)`);
+console.log(`    Priya (${getStudentTotalMarks(priya)}/600 = 86.17%): ${priya.remarks} (Expected: VERY GOOD)`);
+console.log(`    Abhijeet (${getStudentTotalMarks(abhijeet)}/600 = 72.83%): ${abhijeet.remarks} (Expected: GOOD)`);
+console.log(`    Rohan (${getStudentTotalMarks(rohan)}/600 = 69.33%): ${rohan.remarks} (Expected: GOOD)`);
+console.log(`    Vikram (${getStudentTotalMarks(vikram)}/600 = 58.17%): ${vikram.remarks} (Expected: GOOD)`);
+if (!t5_6Passed) remarksAllPassed = false;
+
+// 5.7 Additional Bulk Import test with all four tiers: EXCELLENT (95%), VERY GOOD (80%), GOOD (65%), POOR (40%)
+const tierCsvRows = [
+  { name: 'Topper', roll: '101', maths_total: '95', science_total: '95', english_total: '95', hindi_total: '95', sst_total: '95', computer_total: '95', remarks: 'MANUAL TYPED WRONG' },
+  { name: 'Achiever', roll: '102', maths_total: '80', science_total: '80', english_total: '80', hindi_total: '80', sst_total: '80', computer_total: '80', remarks: 'HARDCODED BAD' },
+  { name: 'Passer', roll: '103', maths_total: '65', science_total: '65', english_total: '65', hindi_total: '65', sst_total: '65', computer_total: '65', remarks: 'OLD REMARK' },
+  { name: 'Struggler', roll: '104', maths_total: '40', science_total: '40', english_total: '40', hindi_total: '40', sst_total: '40', computer_total: '40', remarks: 'SHOULD BE OVERRIDDEN' }
+];
+const parsedTierStudents = tierCsvRows.map((r, i) => validateAndParseImportedRow(r, i, new Set()).student);
+const topperPass = parsedTierStudents[0].remarks === 'EXCELLENT';
+const achieverPass = parsedTierStudents[1].remarks === 'VERY GOOD';
+const passerPass = parsedTierStudents[2].remarks === 'GOOD';
+const strugglerPass = parsedTierStudents[3].remarks === 'POOR';
+const t5_7Passed = topperPass && achieverPass && passerPass && strugglerPass;
+console.log(`  Test 5.7 [Bulk Import overrides manual/CSV remarks with accurate calculated remarks]: ${t5_7Passed ? 'PASS' : 'FAIL'} (Topper=${parsedTierStudents[0].remarks}, Achiever=${parsedTierStudents[1].remarks}, Passer=${parsedTierStudents[2].remarks}, Struggler=${parsedTierStudents[3].remarks})`);
+if (!t5_7Passed) remarksAllPassed = false;
+
 console.log('\n=== OVERALL TEST SUITE SUMMARY ===');
-const grandPass = sampleAllValid && edgeAllPassed && htmlAllPassed && rankAllPassed;
+const grandPass = sampleAllValid && edgeAllPassed && htmlAllPassed && rankAllPassed && remarksAllPassed;
 console.log(`Overall Test Suite Status: ${grandPass ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
 process.exit(grandPass ? 0 : 1);
